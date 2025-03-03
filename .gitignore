@@ -1,41 +1,10 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+stockview/public/market_data.db
+stockview/public/sample.db
+stockview/package-lock.json
+.idea/.gitignore
+.idea/dataSources.local.xml
+.idea/dataSources.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/dataSources/fa767312-88e4-4672-a130-733f25d9aa10.xml
+.idea/dataSources/fa767312-88e4-4672-a130-733f25d9aa10/storage_v2/_src_/schema/main.uQUzAA.meta
