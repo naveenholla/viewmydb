@@ -49,30 +49,28 @@ const StatsPanel = ({ selectedAsset }) => {
     const fetchAssetStats = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        // Use a more efficient single query with indexed columns
-        // This reduces database processing time significantly
         const optimizedQuery = `
-          WITH asset_data AS (
-            SELECT 
-              MIN(timestamp) as first_timestamp,
-              MAX(timestamp) as last_timestamp,
-              MIN(low) as lowest_price,
-              MAX(high) as highest_price,
-              AVG(volume) as avg_volume,
-              SUM(volume) as total_volume,
-              COUNT(*) as data_points
-            FROM ohlcv 
-            WHERE symbol = '${selectedAsset.id}'
-          )
-          SELECT 
-            first_timestamp, last_timestamp, lowest_price, highest_price,
-            avg_volume, total_volume, data_points,
-            (SELECT close FROM ohlcv WHERE symbol = '${selectedAsset.id}' ORDER BY timestamp ASC LIMIT 1) as first_price,
-            (SELECT close FROM ohlcv WHERE symbol = '${selectedAsset.id}' ORDER BY timestamp DESC LIMIT 1) as last_price
-          FROM asset_data
-        `;
+      WITH asset_data AS (
+        SELECT 
+          MIN(timestamp) as first_timestamp,
+          MAX(timestamp) as last_timestamp,
+          MIN(low) as lowest_price,
+          MAX(high) as highest_price,
+          AVG(volume) as avg_volume,
+          SUM(volume) as total_volume,
+          COUNT(*) as data_points
+        FROM ohlcv 
+        WHERE symbol = '${selectedAsset.id}'
+      )
+      SELECT 
+        first_timestamp, last_timestamp, lowest_price, highest_price,
+        avg_volume, total_volume, data_points,
+        (SELECT close FROM ohlcv WHERE symbol = '${selectedAsset.id}' ORDER BY timestamp ASC LIMIT 1) as first_price,
+        (SELECT close FROM ohlcv WHERE symbol = '${selectedAsset.id}' ORDER BY timestamp DESC LIMIT 1) as last_price
+      FROM asset_data
+    `;
 
         const result = executeQuery(optimizedQuery);
         if (!result || !result.length || !result[0].values.length) {
@@ -81,14 +79,19 @@ const StatsPanel = ({ selectedAsset }) => {
           return;
         }
 
-        // Extract all data from the single query result
         const data = result[0].values[0];
-        const firstTimestamp = new Date(data[0]);
-        const lastTimestamp = new Date(data[1]);
+        const firstTimestamp = Date.parse(data[0]); // Parse TEXT to milliseconds
+        const lastTimestamp = Date.parse(data[1]);
+        if (isNaN(firstTimestamp) || isNaN(lastTimestamp)) {
+          throw new Error('Invalid timestamp format in database');
+        }
+
+        const firstDate = new Date(firstTimestamp);
+        const lastDate = new Date(lastTimestamp);
         const firstPrice = data[7];
         const lastPrice = data[8];
         const priceChange = lastPrice - firstPrice;
-        const priceChangePercent = (priceChange / firstPrice) * 100;
+        const priceChangePercent = firstPrice !== 0 ? (priceChange / firstPrice) * 100 : 0;
 
         const statsData = {
           priceChange,
@@ -98,11 +101,10 @@ const StatsPanel = ({ selectedAsset }) => {
           averageVolume: data[4],
           totalVolume: data[5],
           dataPoints: data[6],
-          firstDate: firstTimestamp.toLocaleDateString(),
-          lastDate: lastTimestamp.toLocaleDateString()
+          firstDate: firstDate.toLocaleDateString(),
+          lastDate: lastDate.toLocaleDateString(),
         };
 
-        // Cache the result
         statsCache.current[selectedAsset.id] = statsData;
         setStats(statsData);
       } catch (err) {
